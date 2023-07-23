@@ -1,0 +1,5 @@
+pymongo
+xdelta3
+boto3
+flask
+psycopg2-binary
