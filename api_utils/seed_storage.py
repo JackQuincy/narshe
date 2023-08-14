@@ -3,10 +3,11 @@ from api_utils.Seed import Seed
 from api_utils.get_db import get_db, get_s3
 from api_utils.collections import SEEDS, SPOILER_LOGS, API_KEYS
 from botocore.exceptions import ClientError
+import psycopg2
 
 class SeedStorage(object):
 
-    USE_PSQL = False
+    USE_PSQL = True
     @staticmethod
     def get_seeds_table(): 
         return os.environ.get('PSQL_SEEDS_TABLE')
@@ -254,7 +255,8 @@ class SeedStorage(object):
             seed_json = seeds.find_one({
                 'seed_id': seed_id
             })
-            del seed_json['_id']
+            if seed_json is not None:
+                del seed_json['_id']
         return seed_json
 
 

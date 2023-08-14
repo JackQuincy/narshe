@@ -1,2 +1,3 @@
 *.smc
+.env
 __pycache__
