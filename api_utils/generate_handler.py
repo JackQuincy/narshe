@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import sys 
 import tempfile
+import urllib.request
 from flask import Response
 
 class GenerateHandler():
@@ -171,9 +172,12 @@ class GenerateHandler():
     return subprocess.Popen(args, cwd = cwd).wait()
 
   def _run_worlds_collide(self, in_filename, out_filename, manifest_filename, flags):
-    src_file = 'ff3.smc'
-
-    shutil.copyfile(src_file, in_filename)
+    src_file = os.getenv("FF3_INPUT_ROM") or 'ff3.smc'
+    
+    if src_file.startswith('http'):
+      urllib.request.urlretrieve(src_file, in_filename)
+    else:
+      shutil.copyfile(src_file, in_filename)
 
     cwd = os.getcwd()  + "/WorldsCollide"
 

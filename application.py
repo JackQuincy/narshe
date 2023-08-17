@@ -15,7 +15,8 @@ application = Flask(__name__)
 
 @application.route("/", methods=["GET"])
 def hello_world():
-    return "<p>Hello!</p>"
+    import os
+    return f"<p>{os.getenv('HELLO_TEXT')}</p>"
 
 #register the endpoints
 application.register_blueprint(api.generate.bp)
