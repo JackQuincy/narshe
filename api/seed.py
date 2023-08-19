@@ -54,7 +54,11 @@ def get_seed_with_key(raw_key, seed_id):
     payload = get_seed_payload(seed, log['log'], patch, website_url=website_url, filename=filename)
 
     return Response (
-        response = json.dumps(payload).encode(),
+        response = json.dumps({
+            'data': payload,
+            'errors': [],
+            'success': True
+        }).encode(),
         status = 200,
         mimetype='application/json',
     )
