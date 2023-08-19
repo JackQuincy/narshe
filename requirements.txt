@@ -2,5 +2,6 @@ pymongo
 xdelta3
 boto3
 flask
+flask-cors
 psycopg2-binary
 python-dotenv

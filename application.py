@@ -1,4 +1,5 @@
 from flask import Flask, make_response
+from flask_cors import CORS
 from dotenv import load_dotenv
 import api.metadata
 import api.generate
@@ -12,6 +13,7 @@ import api.wc
 # read in the env variables
 load_dotenv('.env')
 application = Flask(__name__)
+CORS(application)
 
 @application.route("/", methods=["GET"])
 def hello_world():
