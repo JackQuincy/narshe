@@ -1,10 +1,12 @@
 import os, logging
 from api_utils.Seed import Seed
-from api_utils.get_db import get_db, get_s3
+from api_utils.get_db import get_db, get_s3, get_gcp_bucket
 from api_utils.collections import SEEDS, SPOILER_LOGS, API_KEYS
 from api_utils.get_timestamp import get_timestamp
 from botocore.exceptions import ClientError
+import google
 from google.cloud import datastore
+
 
 class SeedStorage(object):
 
@@ -58,9 +60,13 @@ class SeedStorage(object):
 
         datastore_client.put(entity)
 
-        ### store the patch in the S3 bucket ###
-        s3 = get_s3()
-        s3.put_object(Bucket=SeedStorage.get_patch_bucket(), Key=seed.seed_id, Body=patch)
+        ### store the patch in the Google Cloud bucket ###
+        # s3 = get_s3()
+        # s3.put_object(Bucket=SeedStorage.get_patch_bucket(), Key=seed.seed_id, Body=patch)
+
+        bucket = get_gcp_bucket()
+        blob = bucket.blob(seed.seed_id)
+        blob.upload_from_string(patch)
 
         return seed.to_json()
 
@@ -101,14 +107,29 @@ class SeedStorage(object):
 
     @staticmethod
     def get_patch(seed_id):
+
         ''' get the patch for the given seed id -- return None if it doesn't exist '''
-        s3 = get_s3()
+        bucket = get_gcp_bucket()
+
         try:
-            s3_obj = s3.get_object(Bucket=SeedStorage.get_patch_bucket(), Key=seed_id)
-            patch = s3_obj['Body'].read().decode('utf-8')
-        except ClientError as error:
-            logging.error(f"Error retrieving patch for seed_id {seed_id}", error)
+            blob = bucket.blob(seed_id)
+            if blob is None:
+                patch = None
+            else:
+                patch = blob.download_as_bytes().decode('utf-8')
+        except google.api_core.exceptions.NotFound:
             patch = None
+
+        # fall back to s3 bucket
+        if patch is None:
+            logging.warning(f"Falling back on S3 for patch {seed_id}")
+            s3 = get_s3()
+            try:
+                s3_obj = s3.get_object(Bucket=SeedStorage.get_patch_bucket(), Key=seed_id)
+                patch = s3_obj['Body'].read().decode('utf-8')
+            except ClientError as Argument:
+                logging.exception(f"Error retrieving patch for seed_id {seed_id}")
+                patch = None
         return patch
 
     @staticmethod

@@ -3,6 +3,7 @@ import os
 from api_utils.collections import API_KEYS, PRESETS, SEED_DOWNLOADS, SEEDS, SPOILER_LOGS
 from pymongo import MongoClient
 import boto3
+from google.cloud import storage
 from botocore.exceptions import ClientError
 
 
@@ -41,3 +42,7 @@ def get_s3():
   s3 = boto3.client('s3')
   migration(s3)
   return s3
+
+def get_gcp_bucket():
+  gcp = storage.Client()
+  return gcp.get_bucket(os.environ.get('PATCH_BUCKET'))
