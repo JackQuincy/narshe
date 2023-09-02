@@ -11,13 +11,14 @@ import subprocess
 import sys 
 import tempfile
 import urllib.request
+import logging
 from flask import Response
 
 class GenerateHandler():
   def __init__(self, include_patch, include_log, use_protocol):
     self.include_patch = include_patch
     self.include_log = include_log
-    self.use_protocol = use_protocol # to do: make sure it's recapture or api_key
+    self.use_protocol = use_protocol # to do: make sure it's recaptcha or api_key
 
   def get_created_by(self, post_data):
     protocol = self.use_protocol
@@ -74,9 +75,9 @@ class GenerateHandler():
       data = json.loads(post_data)
 
       protocol =  self.use_protocol
-      print(f'using {protocol} validation protocol')
+      logging.info(f'using {protocol} validation protocol')
       (status, error) = self.validate_api_key(data) if protocol == 'api_key' else self.validate_recaptcha(data)
-      print(f"{protocol} returned with status {status}")
+      logging.info(f"{protocol} returned with status {status}")
       if protocol == 'api_key' and status == 403:
         return Response(
           response = json.dumps({
@@ -112,7 +113,7 @@ class GenerateHandler():
         wc_filename = out_filename
         if os.getenv("NEXT_PUBLIC_ENABLE_BETA") == "true":
           wc_filename = dir + f"/{base_filename}-beta.smc"
-          print(out_filename, wc_filename)
+          logging.debug(out_filename, wc_filename)
           self._apply_beta_changes(out_filename, wc_filename)
         with open(in_filename, "rb") as old, open(wc_filename, "rb") as new, open(log_filename, "rb") as logfile, open(manifest_filename, "rb") as manifestfile:
           raw_patch = xdelta3.encode(old.read(), new.read())
@@ -143,8 +144,6 @@ class GenerateHandler():
             created_by = created_by
           )
           
-          del raw_seed['_id']
-          
           seed = get_seed_payload(
             raw_seed, 
             log if include_log else None, 
@@ -167,7 +166,7 @@ class GenerateHandler():
     red_window_arg = '252828.202222.161616.101010.050606.313131.140606'
 
     args = ['python', executable, '-i', wc_filename, '-o', new_filename, "-bs", '6', "-ms", "1", '-w1', red_window_arg]
-    print(f'running command {args}')
+    logging.debug(f'running command {args}')
 
     return subprocess.Popen(args, cwd = cwd).wait()
 
@@ -184,6 +183,6 @@ class GenerateHandler():
     executable = cwd + "/wc.py"
 
     args = ['python', executable, '-i', in_filename, '-o', out_filename, '-manifest', manifest_filename] + flags.split()
-    print(f'running command {args}')
+    logging.debug(f'running command {args}')
 
     return subprocess.Popen(args, cwd = cwd).wait()
