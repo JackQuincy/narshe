@@ -27,4 +27,5 @@ flask run
 
 Docker:
 build with  `docker build --tag=narshe .`
-run locally with `docker run -p8000:8000 -e PORT=8000 narshe:latest`
+run locally with `docker run -p5000:5000 -e PORT=5000 narshe:latest`
+also useful: `docker run --rm -it --entrypoint bash narshe:latest`
