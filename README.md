@@ -22,3 +22,9 @@ To run locally:
 pip install -r requirements.txt
 flask run
 ```
+
+
+
+Docker:
+build with  `docker build --tag=narshe .`
+run locally with `docker run -p8000:8000 -e PORT=8000 narshe:latest`
