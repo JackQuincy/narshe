@@ -1,6 +1,7 @@
 from flask import Flask, make_response
 from flask_cors import CORS
 from dotenv import load_dotenv
+import requests
 import api.metadata
 import api.generate
 import api.log
@@ -19,6 +20,17 @@ CORS(application)
 def hello_world():
     import os
     return f"<p>{os.getenv('HELLO_TEXT')}</p>"
+
+# seedbot proxies (to avoid CORS errors)
+@application.route("/presets", methods=["GET"])
+def get_presets():
+    resp = requests.get("https://storage.googleapis.com/seedbot/user_presets.json", stream=True)
+    return (resp.raw.read(), resp.status_code, resp.headers.items())
+
+@application.route("/sotws", methods=["GET"])
+def get_sotws():
+    resp = requests.get("https://storage.googleapis.com/seedbot/sotw_db.json", stream=True)
+    return (resp.raw.read(), resp.status_code, resp.headers.items()) 
 
 #register the endpoints
 application.register_blueprint(api.generate.bp)
