@@ -45,7 +45,7 @@ class GenerateHandler():
     raw_response = resp.read()
     result = json.loads(raw_response)
     if not result['success']:
-      return (403, 'Invalid recaptcha secret')
+      return (403, f'Google recaptcha error! Result: {result}')
 
     return (200, None)
   
