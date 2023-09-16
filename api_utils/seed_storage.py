@@ -36,6 +36,21 @@ class SeedStorage(object):
         ''' Store the given seed, patch, and spoiler log in storage
             Return the JSON version of the seed
         '''
+        # store the seed and its spoiler log in mongo TODO: remove once cross-compatibility with existing ff6worldscollide.com is no longer required
+        try:
+            seeds = get_db().get_collection(SEEDS)
+            seed_json = seed.to_json()
+            seeds.insert_one(seed_json)
+
+            spoiler_logs = get_db().get_collection(SPOILER_LOGS)
+            spoiler_logs.insert_one({
+            'seed_id': seed.seed_id,
+            'log': spoiler_log
+            })
+        except Exception as e:
+            logging.exception("Unable to store seed and spoiler log in mongoDB", e)
+
+
         ### store the seed and its spoiler log in datastore ###
         datastore_client = datastore.Client()
 
@@ -61,8 +76,13 @@ class SeedStorage(object):
         datastore_client.put(entity)
 
         ### store the patch in the Google Cloud bucket ###
-        # s3 = get_s3()
-        # s3.put_object(Bucket=SeedStorage.get_patch_bucket(), Key=seed.seed_id, Body=patch)
+
+        # store the patch in S3 TODO: remove once cross-compatibility with existing ff6worldscollide.com is no longer required
+        try:
+            s3 = get_s3()
+            s3.put_object(Bucket=SeedStorage.get_patch_bucket(), Key=seed.seed_id, Body=patch)
+        except Exception as e:
+            logging.exception("Unable to store patch in S3", e)
 
         bucket = get_gcp_bucket()
         blob = bucket.blob(seed.seed_id)
