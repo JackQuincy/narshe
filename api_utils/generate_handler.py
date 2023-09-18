@@ -111,10 +111,10 @@ class GenerateHandler():
         )
       else:
         wc_filename = out_filename
-        if os.getenv("NEXT_PUBLIC_ENABLE_BETA") == "true":
-          wc_filename = dir + f"/{base_filename}-beta.smc"
-          logging.debug(out_filename, wc_filename)
-          self._apply_beta_changes(out_filename, wc_filename)
+        #if os.getenv("NEXT_PUBLIC_ENABLE_BETA") == "true":
+        #  wc_filename = dir + f"/{base_filename}-beta.smc"
+        #  logging.debug(out_filename, wc_filename)
+        #  self._apply_beta_changes(out_filename, wc_filename)
         with open(in_filename, "rb") as old, open(wc_filename, "rb") as new, open(log_filename, "rb") as logfile, open(manifest_filename, "rb") as manifestfile:
           raw_patch = xdelta3.encode(old.read(), new.read())
 
