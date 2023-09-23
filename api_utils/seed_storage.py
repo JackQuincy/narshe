@@ -1,9 +1,8 @@
 import os, logging
 from api_utils.Seed import Seed
-from api_utils.get_db import get_db, get_s3, get_gcp_bucket
+from api_utils.get_db import get_gcp_bucket
 from api_utils.collections import SEEDS, SPOILER_LOGS, API_KEYS
 from api_utils.get_timestamp import get_timestamp
-from botocore.exceptions import ClientError
 import google
 from google.cloud import datastore
 
@@ -36,27 +35,12 @@ class SeedStorage(object):
         ''' Store the given seed, patch, and spoiler log in storage
             Return the JSON version of the seed
         '''
-        # store the seed and its spoiler log in mongo TODO: remove once cross-compatibility with existing ff6worldscollide.com is no longer required
-        try:
-            seeds = get_db().get_collection(SEEDS)
-            seed_json = seed.to_json()
-            seeds.insert_one(seed_json)
-
-            spoiler_logs = get_db().get_collection(SPOILER_LOGS)
-            spoiler_logs.insert_one({
-            'seed_id': seed.seed_id,
-            'log': spoiler_log
-            })
-        except Exception as e:
-            logging.exception("Unable to store seed and spoiler log in mongoDB", e)
-
-
         ### store the seed and its spoiler log in datastore ###
         datastore_client = datastore.Client()
 
         # Seed insert
         store_key = SeedStorage.get_seed_key(datastore_client, seed.seed_id)
-        entity = datastore.Entity(key = store_key)
+        entity = datastore.Entity(key = store_key, exclude_from_indexes=("flags",))
         entity["description"] = seed.description
         entity["flags"] = seed.flags
         entity["hash"] = seed.hash
@@ -76,14 +60,6 @@ class SeedStorage(object):
         datastore_client.put(entity)
 
         ### store the patch in the Google Cloud bucket ###
-
-        # store the patch in S3 TODO: remove once cross-compatibility with existing ff6worldscollide.com is no longer required
-        try:
-            s3 = get_s3()
-            s3.put_object(Bucket=SeedStorage.get_patch_bucket(), Key=seed.seed_id, Body=patch)
-        except Exception as e:
-            logging.exception("Unable to store patch in S3", e)
-
         bucket = get_gcp_bucket()
         blob = bucket.blob(seed.seed_id)
         blob.upload_from_string(patch)
@@ -101,10 +77,6 @@ class SeedStorage(object):
         entity = datastore_client.get(key=store_key)
         api_key = entity
 
-        if api_key is None:
-            # get from mongo db as fallback
-            logging.warning(f"Falling back on mongoDB for api_key {API_KEYS + SeedStorage.get_env()} {key}")
-            api_key = get_db().get_collection(API_KEYS).find_one({'key': key})
         return api_key
 
     @staticmethod
@@ -118,11 +90,6 @@ class SeedStorage(object):
         entity = datastore_client.get(key=store_key)
         log = entity
 
-        # get from mongo db as fallback
-        if log is None:
-            logging.warning(f"Falling back on mongoDB for spoiler_log {SPOILER_LOGS + SeedStorage.get_env()} {seed_id}")
-            log = get_db().get_collection(SPOILER_LOGS).find_one({'seed_id': seed_id})
-            del log['_id']
         return log
 
     @staticmethod
@@ -140,16 +107,6 @@ class SeedStorage(object):
         except google.api_core.exceptions.NotFound:
             patch = None
 
-        # fall back to s3 bucket
-        if patch is None:
-            logging.warning(f"Falling back on S3 for patch {seed_id}")
-            s3 = get_s3()
-            try:
-                s3_obj = s3.get_object(Bucket=SeedStorage.get_patch_bucket(), Key=seed_id)
-                patch = s3_obj['Body'].read().decode('utf-8')
-            except ClientError as Argument:
-                logging.exception(f"Error retrieving patch for seed_id {seed_id}")
-                patch = None
         return patch
 
     @staticmethod
@@ -172,17 +129,6 @@ class SeedStorage(object):
 
             seed_json = s.to_json()
 
-        if seed_json is None:
-            logging.warning(f"Falling back on mongoDB for seed {SEEDS + SeedStorage.get_env()} {seed_id}")
-            # get from mongodb as fallback
-            db = get_db()
-            seeds = db.get_collection('seeds')
-
-            seed_json = seeds.find_one({
-                'seed_id': seed_id
-            })
-            if seed_json is not None:
-                del seed_json['_id']
         return seed_json
 
 
