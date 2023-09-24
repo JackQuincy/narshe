@@ -1,2 +1,5 @@
 *.smc
+.env
 __pycache__
+ff3.smc
+service_keys/*.json
