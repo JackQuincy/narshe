@@ -1,3 +1,4 @@
 [submodule "WorldsCollide"]
 	path = WorldsCollide
 	url = https://github.com/JackQuincy/WorldsCollide
+	branch = worlds-divided
