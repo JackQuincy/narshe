@@ -1,10 +1,12 @@
 from api_utils.get_seed_payload import get_seed_payload
 
+from api_utils.get_db import get_gcp_bucket, get_rom_blob
 from api_utils.get_seed_url import get_seed_url
 from api_utils.create_seed import create_seed
 
 import xdelta3
 import json
+import google
 import os
 import shutil
 import subprocess
@@ -172,8 +174,18 @@ class GenerateHandler():
 
   def _run_worlds_collide(self, in_filename, out_filename, manifest_filename, flags):
     src_file = os.getenv("FF3_INPUT_ROM") or 'ff3.smc'
-    
-    if src_file.startswith('http'):
+    bucketblobName = get_rom_blob()
+    if bucketblobName != None:
+      bucket = get_gcp_bucket()
+      try:
+          blob = bucket.blob(bucketblobName)
+          if blob is None:
+              rom = None
+          else:
+              rom = blob.download_to_filename(in_filename)
+      except google.api_core.exceptions.NotFound:
+          rom = None
+    elif src_file.startswith('http'):
       urllib.request.urlretrieve(src_file, in_filename)
     else:
       shutil.copyfile(src_file, in_filename)
